@@ -1,0 +1,24 @@
+{
+    "name": "mocha",
+    "private": true,
+    "type": "module",
+    "main": "src/index.ts",
+    "scripts": {
+        "start": "bun --smol src/index.ts",
+        "dev": "bun --smol --watch src/index.ts"
+    },
+    "dependencies": {
+        "@sapphire/discord.js-utilities": "^7.3.3",
+        "@sapphire/framework": "^5.5.0",
+        "@sapphire/plugin-subcommands": "^7.0.1",
+        "@sapphire/time-utilities": "^1.7.14",
+        "discord.js": "^14.27.0",
+        "fastest-levenshtein": "^1.0.16",
+        "mongodb": "^7.5.0",
+        "sharp": "^0.35.3"
+    },
+    "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^7.0.2"
+    }
+}
