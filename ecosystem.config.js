@@ -1,6 +1,5 @@
-import type { StartOptions } from "pm2";
-
-export const apps: StartOptions[] = [
+/** @type {import("pm2").StartOptions[]} */
+export const apps = [
     {
         name: "bot",
         script: "./src/index.ts",
