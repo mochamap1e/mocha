@@ -1,9 +1,9 @@
 import { Command } from "@sapphire/framework";
 import { EmbedBuilder, MessageFlags, TextChannel } from "discord.js";
+import { desc } from "drizzle-orm";
 
 import { db } from "@/db/client";
-
-const database = await db();
+import { user } from "@/db/schema";
 
 const delay = 30000;
 let lastRunTime = 0;
@@ -23,7 +23,7 @@ export class Leaderboard extends Command {
                 .setName(this.name)
                 .setDescription(this.description),
             {
-                idHints: ["1533557275191677079"]
+                idHints: []
             }
         );
     }
@@ -38,11 +38,14 @@ export class Leaderboard extends Command {
 
             await interaction.guild?.members.fetch();
 
-            let ranking = await database.find().sort({ points: -1 }).toArray();
+            let ranking = await db
+                .select()
+                .from(user)
+                .orderBy(desc(user.points));
 
             ranking = ranking.filter(account =>
                 account.bot !== true &&
-                interaction.guild?.members.cache.has(account.discordId)
+                interaction.guild!.members.cache.has(account.discordId)
             );
 
             let rankingString = "";

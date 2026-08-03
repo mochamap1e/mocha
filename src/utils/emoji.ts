@@ -1,3 +1,10 @@
+interface Emoji {
+    id?: number,
+    name: string,
+    emojiId: string,
+    animated: boolean
+}
+
 let emojis: Emoji[] = [
     { name: "FreeDemon", emojiId: "1533570527631769630", animated: false },
     { name: "PeacefulDemon", emojiId: "1533570535651541142", animated: false },
@@ -26,6 +33,14 @@ emojis.forEach((_, index) => emojis[index]!.id = index+1);
 
 export { emojis };
 
-export function getEmojiById(id: number) { return emojis.find(emoji => emoji.id === id); }
-export function getEmojiByEmojiId(id: string) { return emojis.find(emoji => emoji.emojiId === id); }
-export function emojiToDiscordEmoji(emoji: Emoji) { return `<${emoji.animated ? "a" : ""}:${emoji.name}:${emoji.emojiId}>`; }
+export function getEmojiById(id: number) {
+    return emojis.find(emoji => emoji.id === id);
+}
+
+export function getEmojiByEmojiId(id: string) {
+    return emojis.find(emoji => emoji.emojiId === id);
+}
+
+export function emojiToDiscordEmoji(emoji: Emoji) {
+    return `<${emoji.animated ? "a" : ""}:${emoji.name}:${emoji.emojiId}>`!;
+}

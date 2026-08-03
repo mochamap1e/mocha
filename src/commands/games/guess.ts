@@ -1,6 +1,8 @@
 import sharp from "sharp";
-import { Command } from "@sapphire/framework";
+import { randomInt } from "mathjs";
+import { sql, eq } from "drizzle-orm";
 import { distance } from "fastest-levenshtein";
+import { Command } from "@sapphire/framework";
 import {
     AttachmentBuilder,
     EmbedBuilder,
@@ -14,13 +16,10 @@ import type { Sharp } from "sharp";
 import type { TextChannel, User } from "discord.js";
 
 import { db } from "@/db/client";
-import { errors } from "@/utils/errors";
-import { randomInt } from "@/utils/math";
+import { user } from "@/db/schema";
 import { getList } from "@/utils/pointercrate";
 
 //////// VARIABLES
-
-const database = await db();
 
 const imageName = "level.jpg";
 const imageUrl = "attachment://" + imageName;
@@ -28,8 +27,8 @@ const imageUrl = "attachment://" + imageName;
 const time = 30;
 const timeMs = time * 1000;
 
-const startPoints = 25;
-const pointLoss = 4;
+const startPoints = 100;
+const pointLoss = 15;
 
 const startPixelation = 25;
 const reveal1Pixelation = 15;
@@ -43,46 +42,6 @@ enum GameEndReason {
     TimeUp
 }
 
-//////// FUNCTIONS
-
-async function createOriginalImage(ytLink: string) {
-    const videoId = ytLink.replace("https://www.youtube.com/watch?v=", "");
-    const imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-
-    // get image buffer
-    const fetchedImage = await fetch(imageUrl);
-    const arrayBuffer = await fetchedImage.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // create sharp image
-    const image = sharp(buffer);
-    const metadata = await image.metadata();
-
-    // crop image
-    const originalImage = image.extract({
-        left: 0,
-        top: 45,
-        width: metadata.width,
-        height: 270
-    });
-
-    return originalImage;
-}
-
-async function createPixelatedImage(image: Sharp, pixelSize: number) {
-    const metadata = await image.metadata();
-
-    const smallWidth = Math.round(metadata.width / pixelSize);
-    const smallHeight = Math.round(metadata.height / pixelSize);
-    const pixelatedWidth = smallWidth * pixelSize;
-    const pixelatedHeight = smallHeight * pixelSize;
-
-    const smallImage = sharp(await image.clone().resize(smallWidth, smallHeight, { kernel: sharp.kernel.nearest }).toBuffer());
-    const pixelatedImage = smallImage.resize(pixelatedWidth, pixelatedHeight, { kernel: sharp.kernel.nearest });
-
-    return new AttachmentBuilder(pixelatedImage, { name: imageName });
-}
-
 //////// MAIN
 
 export class Guess extends Command {
@@ -90,7 +49,7 @@ export class Guess extends Command {
         super(context, {
             ...options,
             name: "guess",
-            description: "Guess the list level based on the pixelated image!"
+            description: "Guess the list level based on the pixelated thumbnail!"
         });
     }
 
@@ -100,7 +59,7 @@ export class Guess extends Command {
                 .setName(this.name)
                 .setDescription(this.description),
             {
-                idHints: ["1533505290409082993"]
+                idHints: []
             }
         );
     }
@@ -112,7 +71,7 @@ export class Guess extends Command {
 
         ////////// SETUP //////////
 
-        const list = getList(); if (!list) return interaction.editReply(errors.NO_DEMONLIST);
+        const list = getList(); if (!list) return interaction.editReply("For some reason I don't have access to the current demonlist.");
         const level = list[randomInt(0, list.length)]!;
 
         ////////// EMBED //////////
@@ -151,10 +110,10 @@ export class Guess extends Command {
         let reveals = 0;
         let ended = false
 
-        const originalImage = await createOriginalImage(level.video!);
+        const originalImage = await this.createOriginalImage(level.video!);
         const originalImageAttachment = new AttachmentBuilder(originalImage, { name: imageName });
 
-        const pixelatedImage = await createPixelatedImage(originalImage, startPixelation);
+        const pixelatedImage = await this.createPixelatedImage(originalImage, startPixelation);
 
         const reply = await interaction.editReply({
             embeds: [embed],
@@ -164,7 +123,7 @@ export class Guess extends Command {
 
         const timer = setTimeout(() => endGame(GameEndReason.TimeUp), timeMs);
 
-        async function endGame(reason: GameEndReason, user?: User) {
+        async function endGame(reason: GameEndReason, winner?: User) {
             if (ended) return;
 
             ended = true;
@@ -179,26 +138,19 @@ export class Guess extends Command {
 
             switch(reason) {
                 case GameEndReason.CorrectAnswer:
-                    const account = await database.findOneAndUpdate(
-                        {
-                            discordId: user!.id
-                        },
-                        {
-                            $inc: {
-                                points
-                            }
-                        },
-                        {
-                            upsert: true,
-                            returnDocument: "after"
-                        }
-                    );
+                    const [account] = await db
+                        .update(user)
+                        .set({
+                            points: sql`${user.points} + ${points}`
+                        })
+                        .where(eq(user.discordId, winner!.id))
+                        .returning();
 
-                    embed.setDescription(`<@${user!.id}> got it. ${answerString}\n\n(+${points} points, total ${account?.points.toLocaleString()} points)`);
+                    embed.setDescription(`<@${winner!.id}> got it. ${answerString}\n\n(+${points} points, total ${account!.points.toLocaleString()} points)`);
 
                     break;
                 case GameEndReason.GaveUp:
-                    embed.setDescription(`<@${user!.id}> gave up. ${answerString}`);
+                    embed.setDescription(`<@${interaction.user.id}> gave up. ${answerString}`);
                     break;
                 case GameEndReason.TimeUp:
                     embed.setTitle("Time's up!");
@@ -266,7 +218,7 @@ export class Guess extends Command {
                     }
                 };
 
-                const pixelatedImage = await createPixelatedImage(originalImage, pixelation!);
+                const pixelatedImage = await this.createPixelatedImage(originalImage, pixelation!);
 
                 await collected.update({
                     components: [row],
@@ -278,7 +230,7 @@ export class Guess extends Command {
             if (collected.customId === giveUpButton.data.custom_id) {
                 if (collected.user.id !== interaction.user.id) {
                     interaction.reply({
-                        content: errors.CANNOT_USE,
+                        content: "You cannot use this action.",
                         flags: MessageFlags.Ephemeral
                     });
 
@@ -304,5 +256,43 @@ export class Guess extends Command {
                 collected.react("\u{274C}");
             }
         });
+    }
+
+    private async createOriginalImage(ytLink: string) {
+        const videoId = ytLink.replace("https://www.youtube.com/watch?v=", "");
+        const imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+        // get image buffer
+        const fetchedImage = await fetch(imageUrl);
+        const arrayBuffer = await fetchedImage.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // create sharp image
+        const image = sharp(buffer);
+        const metadata = await image.metadata();
+
+        // crop image
+        const originalImage = image.extract({
+            left: 0,
+            top: 45,
+            width: metadata.width,
+            height: 270
+        });
+
+        return originalImage;
+    }
+
+    private async createPixelatedImage(image: Sharp, pixelSize: number) {
+        const metadata = await image.metadata();
+
+        const smallWidth = Math.round(metadata.width / pixelSize);
+        const smallHeight = Math.round(metadata.height / pixelSize);
+        const pixelatedWidth = smallWidth * pixelSize;
+        const pixelatedHeight = smallHeight * pixelSize;
+
+        const smallImage = sharp(await image.clone().resize(smallWidth, smallHeight, { kernel: sharp.kernel.nearest }).toBuffer());
+        const pixelatedImage = smallImage.resize(pixelatedWidth, pixelatedHeight, { kernel: sharp.kernel.nearest });
+
+        return new AttachmentBuilder(pixelatedImage, { name: imageName });
     }
 }

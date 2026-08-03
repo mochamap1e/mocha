@@ -1,13 +1,29 @@
-import { Time } from "@sapphire/time-utilities";
-
 const api = "https://pointercrate.com/api/v2/demons/listed";
 
-let list: PointercrateLevel[] | null = null;
+interface User {
+    id: number,
+    name: string,
+    banned: false
+}
+
+interface Level {
+    id: number,
+    position: number,
+    name: string,
+    requirement: number,
+    video: string,
+    thumbnail: string,
+    publisher: User,
+    verifier: User,
+    level_id: number
+}
+
+let list: Level[] | null = null;
 
 async function updateList() {
     try {
-        const firstHalf = await (await fetch(api + "?limit=100")).json() as PointercrateLevel[];
-        const secondHalf = await (await fetch(api + "?after=100")).json() as PointercrateLevel[];
+        const firstHalf = await (await fetch(api + "?limit=100")).json() as Level[];
+        const secondHalf = await (await fetch(api + "?after=100")).json() as Level[];
 
         list = firstHalf.concat(secondHalf);
 
@@ -21,4 +37,4 @@ async function updateList() {
 export function getList() { return list; }
 
 updateList();
-setInterval(updateList, Time.Day); // refresh list every day
+setInterval(updateList, 86400000); // refresh list every day

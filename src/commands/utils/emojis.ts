@@ -1,14 +1,11 @@
 import { Command } from "@sapphire/framework";
 import { PaginatedMessage } from "@sapphire/discord.js-utilities";
 import { MessageFlags } from "discord.js";
+import { eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { emojis, getEmojiById, emojiToDiscordEmoji } from "@/utils/emojis";
-import { errors } from "@/utils/errors";
-
-const database = await db();
-
-const timeUntilDelete = 120000; // 2 minutes
+import { user } from "@/db/schema";
+import { emojis, getEmojiById, emojiToDiscordEmoji } from "@/utils/emoji";
 
 export class Emojis extends Command {
     public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -54,8 +51,6 @@ export class Emojis extends Command {
         }
 
         await message.run(interaction);
-
-        setTimeout(() => interaction.deleteReply(), timeUntilDelete);
     }
 }
 
@@ -80,7 +75,7 @@ export class SetEmoji extends Command {
                         .setRequired(true)
                 ),
             {
-                idHints: ["1533589208076390632"]
+                idHints: []
             }
         );
     }
@@ -92,23 +87,16 @@ export class SetEmoji extends Command {
         const emoji = getEmojiById(emojiNumber);
 
         if (emoji) {
-            await database.findOneAndUpdate(
-                {
-                    discordId: interaction.user.id
-                },
-                {
-                    $set: {
-                        emojiId: emoji.emojiId
-                    }
-                },
-                {
-                    upsert: true
-                }
-            );
+            await db
+                .update(user)
+                .set({
+                    emoji: emoji.emojiId
+                })
+                .where(eq(user.discordId, interaction.user.id));
 
             return interaction.editReply({ content: `Your emoji is now ${emojiToDiscordEmoji(emoji)}` });
         } else {
-            return interaction.editReply({ content: errors.INVALID_EMOJI });
+            return interaction.editReply({ content: "Invalid emoji number!" });
         }
     }
 }

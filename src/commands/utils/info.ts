@@ -1,15 +1,15 @@
 import { Command } from "@sapphire/framework";
-import { EmbedBuilder } from "discord.js";
+import { User, EmbedBuilder } from "discord.js";
 
-import { getAccount } from "@/utils/accounts";
-import { getEmojiByEmojiId, emojiToDiscordEmoji } from "@/utils/emojis";
+import { getAccount } from "@/utils/account";
+import { getEmojiByEmojiId, emojiToDiscordEmoji } from "@/utils/emoji";
 
-export class Stats extends Command {
+export class Info extends Command {
     public constructor(context: Command.LoaderContext, options: Command.Options) {
         super(context, {
             ...options,
-            name: "stats",
-            description: "Shows you or someone else's stats."
+            name: "info",
+            description: "Shows you or someone else's info."
         });
     }
 
@@ -21,11 +21,11 @@ export class Stats extends Command {
                 .addUserOption((option) =>
                     option
                         .setName("user")
-                        .setDescription("User to display stats for")
+                        .setDescription("User to display info for")
                         .setRequired(false)
                 ),
             {
-                idHints: ["1533542340252139552"]
+                idHints: []
             }
         );
     }
@@ -33,26 +33,21 @@ export class Stats extends Command {
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         await interaction.deferReply();
 
-        let user = interaction.user;
-        let account = interaction.account;
-
         const inputTarget = interaction.options.getUser("user", false);
 
-        if ((inputTarget) && (inputTarget.id !== interaction.user.id)) {
-            user = inputTarget;
-            account = await getAccount(inputTarget);
-        }
+        let user = inputTarget ?? interaction.user;
+        let account = await getAccount(inputTarget ? inputTarget : interaction.user);
 
-        const emoji = getEmojiByEmojiId(account.emojiId)!;
+        const emoji = getEmojiByEmojiId(account.emoji)!;
 
-        const stats = `
+        const info = `
             **Emoji**: ${emojiToDiscordEmoji(emoji)}
             **Points**: ${account.points.toLocaleString()}
         `;
 
         const embed = new EmbedBuilder()
-            .setTitle(`${user.displayName}'s stats:`)
-            .setDescription(stats)
+            .setTitle(`${user.displayName}'s info:`)
+            .setDescription(info)
             .setThumbnail(user.avatarURL({ size: 256 }));
 
         return await interaction.editReply({
