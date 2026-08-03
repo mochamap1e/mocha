@@ -52,7 +52,7 @@ export class Guess extends Command {
         super(context, {
             ...options,
             name: "guess",
-            description: "Guess the list level based on the pixelated thumbnail!"
+            description: "Guess the list level based on the pixelated screenshot!"
         });
     }
 
@@ -118,7 +118,7 @@ export class Guess extends Command {
         let reveals = 0;
         let ended = false
 
-        const originalImage = await this.createOriginalImage(level.video!);
+        const originalImage = await this.createOriginalImage(level.level_id);
         const originalImageAttachment = new AttachmentBuilder(originalImage, { name: imageName });
 
         const pixelatedImage = await this.createPixelatedImage(originalImage, startPixelation);
@@ -189,7 +189,7 @@ export class Guess extends Command {
             //@ts-ignore
             if (collected.customId === hintButton.data.custom_id) {
                 let hint;
-                if (hints < 2) hints += 1;
+                if (hints < 3) hints += 1;
 
                 points -= pointLoss;
 
@@ -273,9 +273,8 @@ export class Guess extends Command {
         });
     }
 
-    private async createOriginalImage(ytLink: string) {
-        const videoId = ytLink.replace("https://www.youtube.com/watch?v=", "");
-        const imageUrl = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+    private async createOriginalImage(levelId: number) {
+        const imageUrl = `https://levelthumbs.prevter.me/thumbnail/${levelId}/small`;
 
         // get image buffer
         const fetchedImage = await fetch(imageUrl);
@@ -284,17 +283,8 @@ export class Guess extends Command {
 
         // create sharp image
         const image = sharp(buffer);
-        const metadata = await image.metadata();
 
-        // crop image
-        const originalImage = image.extract({
-            left: 0,
-            top: 45,
-            width: metadata.width,
-            height: 270
-        });
-
-        return originalImage;
+        return image;
     }
 
     private async createPixelatedImage(image: Sharp, pixelSize: number) {
