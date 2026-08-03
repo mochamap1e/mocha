@@ -307,6 +307,9 @@ export class Guess extends Command {
         const pixelatedWidth = smallWidth * pixelSize;
         const pixelatedHeight = smallHeight * pixelSize;
 
+        console.log("Pixel size:", pixelSize);
+        console.log("Small width:", smallWidth);
+        console.log("Small height:", smallHeight);
         console.log("Metadata width:", metadata.width);
         console.log("Metadata height:", metadata.height);
         console.log("Pixelated width:", pixelatedWidth);
