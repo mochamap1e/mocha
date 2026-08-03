@@ -5,7 +5,6 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { user } from "@/db/schema";
-import { emojis, getEmojiById, emojiToDiscordEmoji } from "@/utils/emoji";
 
 export class Emojis extends Command {
     public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -22,7 +21,7 @@ export class Emojis extends Command {
                 .setName(this.name)
                 .setDescription(this.description),
             {
-                idHints: ["1533577777251352737"]
+                idHints: ["1533705144930406441"]
             }
         );
     }
@@ -30,19 +29,22 @@ export class Emojis extends Command {
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         const message = new PaginatedMessage();
 
-        const emojisPerPage = 10;
+        const emojisPerPage = 12;
 
         message.setActions(PaginatedMessage.defaultActions.filter((action: any) =>
             action.customId === "@sapphire/paginated-messages.previousPage" ||
             action.customId === "@sapphire/paginated-messages.nextPage"
         ));
 
-        for (let i = 0; i < emojis.length; i += emojisPerPage) {
-            const section = emojis.slice(i, i + emojisPerPage);
+        const emojis = await this.container.client.application.emojis.fetch();
+        const emojiArray = emojis.map(emoji => emoji.toString());
+
+        for (let i = 0; i < emojiArray.length; i += emojisPerPage) {
+            const section = emojiArray.slice(i, i + emojisPerPage);
 
             let pageString = "";
 
-            section.forEach(emoji => pageString += `${emoji.id}: ${emojiToDiscordEmoji(emoji)}\n`);
+            section.forEach((emoji, index) => pageString += `${index + 1 + i}: ${emoji}\n`);
             
             message.addPageEmbed(embed =>
                 embed.setTitle("Emojis")
@@ -75,7 +77,7 @@ export class SetEmoji extends Command {
                         .setRequired(true)
                 ),
             {
-                idHints: []
+                idHints: ["1533705146666844320"]
             }
         );
     }
@@ -84,17 +86,19 @@ export class SetEmoji extends Command {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const emojiNumber = interaction.options.getInteger("emoji", true);
-        const emoji = getEmojiById(emojiNumber);
 
-        if (emoji) {
+        const emojis = await this.container.client.application.emojis.fetch();
+        const emojiArray = emojis.map(emoji => emoji.toString());
+
+        if ((emojiNumber > 0) && (emojiNumber <= emojis.size)) {
+            const emoji = emojiArray[emojiNumber - 1];
+
             await db
                 .update(user)
-                .set({
-                    emoji: emoji.emojiId
-                })
+                .set({ emoji })
                 .where(eq(user.discordId, interaction.user.id));
 
-            return interaction.editReply({ content: `Your emoji is now ${emojiToDiscordEmoji(emoji)}` });
+            return interaction.editReply({ content: `Your emoji is now ${emoji}` });
         } else {
             return interaction.editReply({ content: "Invalid emoji number!" });
         }

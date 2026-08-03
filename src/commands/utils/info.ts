@@ -2,7 +2,6 @@ import { Command } from "@sapphire/framework";
 import { User, EmbedBuilder } from "discord.js";
 
 import { getAccount } from "@/utils/account";
-import { getEmojiByEmojiId, emojiToDiscordEmoji } from "@/utils/emoji";
 
 export class Info extends Command {
     public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -25,7 +24,7 @@ export class Info extends Command {
                         .setRequired(false)
                 ),
             {
-                idHints: []
+                idHints: ["1533705147551584287"]
             }
         );
     }
@@ -38,10 +37,8 @@ export class Info extends Command {
         let user = inputTarget ?? interaction.user;
         let account = await getAccount(inputTarget ? inputTarget : interaction.user);
 
-        const emoji = getEmojiByEmojiId(account.emoji)!;
-
         const info = `
-            **Emoji**: ${emojiToDiscordEmoji(emoji)}
+            **Emoji**: ${account.emoji}
             **Points**: ${account.points.toLocaleString()}
         `;
 

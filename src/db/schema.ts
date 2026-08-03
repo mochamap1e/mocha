@@ -1,7 +1,5 @@
 import { pgTable, serial, integer, varchar, boolean, timestamp } from "drizzle-orm/pg-core";
 
-import { emojis } from "@/utils/emoji";
-
 export const user = pgTable("user", {
     // identifiers
     id: serial().notNull().primaryKey(),
@@ -11,7 +9,7 @@ export const user = pgTable("user", {
     points: integer().notNull().default(0),
 
     // misc
-    emoji: varchar().notNull().default(emojis[0]!.emojiId),
+    emoji: varchar().notNull().default("<:unrated:1533700573415739462>"),
     bot: boolean().notNull(),
 
     createdAt: timestamp("created_at").notNull().defaultNow()

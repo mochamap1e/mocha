@@ -3,7 +3,6 @@ import { EmbedBuilder, ModalBuilder, TextInputBuilder, LabelBuilder, TextInputSt
 import { randomInt } from "mathjs";
 
 import { getAccount } from "@/utils/account";
-import { getEmojiByEmojiId, emojiToDiscordEmoji } from "@/utils/emoji";
 
 const minTrackLength = 20;
 const maxTrackLength = 40;
@@ -126,9 +125,9 @@ export class HorseRace extends Command {
         return startSegment + horse.emoji + endSegment;
     }
 
-    private createHorse(emojiId: string) {
+    private createHorse(emoji: string) {
         const horse: Horse = {
-            emoji: emojiToDiscordEmoji(getEmojiByEmojiId(emojiId)),
+            emoji,
             position: 1
         };
 

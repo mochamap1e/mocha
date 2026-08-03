@@ -1,9 +1,9 @@
 import { GatewayIntentBits } from "discord.js";
-import { ApplicationCommandRegistries, RegisterBehavior, SapphireClient } from "@sapphire/framework";
-
-ApplicationCommandRegistries.setDefaultBehaviorWhenNotIdentical(RegisterBehavior.BulkOverwrite);
+import { SapphireClient, Events } from "@sapphire/framework";
 
 export const token = process.env.TOKEN; if (!token) throw new Error("TOKEN must be provided in .env!");
+
+const wipeCommands = false;
 
 const client = new SapphireClient({
     intents: [
@@ -15,3 +15,10 @@ const client = new SapphireClient({
 });
 
 client.login(token);
+
+if (wipeCommands) {
+    client.once(Events.ClientReady, async () => {
+        await client.application?.commands.set([]);
+        console.log("Wiped all commands.");
+    });
+}

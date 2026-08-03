@@ -59,7 +59,7 @@ export class Guess extends Command {
                 .setName(this.name)
                 .setDescription(this.description),
             {
-                idHints: []
+                idHints: ["1533705143562932265"]
             }
         );
     }

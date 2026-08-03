@@ -23,7 +23,7 @@ export class Leaderboard extends Command {
                 .setName(this.name)
                 .setDescription(this.description),
             {
-                idHints: []
+                idHints: ["1533705148424126600"]
             }
         );
     }
@@ -52,7 +52,7 @@ export class Leaderboard extends Command {
 
             ranking.forEach((account, index) => {
                 index = index + 1;
-                rankingString += `**#${index}**: ${index === 1 ? "\u{1F451}" : ""} <@${account.discordId}> - ${account.points.toLocaleString()} points\n`;
+                rankingString += `**#${index}**: ${account.emoji} <@${account.discordId}> - ${account.points.toLocaleString()} points\n`;
             });
 
             const embed = new EmbedBuilder()
