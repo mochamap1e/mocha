@@ -11,6 +11,9 @@ const trackCharacter = "\\_";
 const startCharacter = "[";
 const endCharacter = "]";
 
+const pointsLabel = "How many points do you want to gamble?";
+const minGamble = 10;
+
 interface Horse {
     userId: string,
     emoji: string,
@@ -32,6 +35,13 @@ export class HorseRace extends Command {
             builder
                 .setName(this.name)
                 .setDescription(this.description)
+                .addIntegerOption(option =>
+                    option
+                        .setName("points")
+                        .setDescription(pointsLabel)
+                        .setMinValue(minGamble)
+                        .setRequired(true)
+                )
                 .addIntegerOption(option =>
                     option
                         .setName("track-length")
@@ -58,7 +68,7 @@ export class HorseRace extends Command {
             .setRequired(true);
 
         const inputLabel = new LabelBuilder()
-            .setLabel("How many points do you want to gamble?")
+            .setLabel(pointsLabel)
             .setDescription("Input ONLY a number (example: 2000)")
             .setTextInputComponent(textInput);
 
@@ -70,6 +80,7 @@ export class HorseRace extends Command {
         await interaction.deferReply();
 
         const game = this;
+        const hostGamble = interaction.options.getInteger("points", true);
         const trackLength = interaction.options.getInteger("track-length", false) ?? minTrackLength;
 
         // SETUP
@@ -78,7 +89,12 @@ export class HorseRace extends Command {
         let winners: Horse[] = [];
 
         const hostAccount = await getAccount(interaction.user);
-        const hostHorse = game.createHorse(hostAccount.discordId, hostAccount.emoji, 50);
+        const hostHorse = await this.joinRace(interaction.user, 50);
+
+        if (hostGamble > hostAccount.points) {
+            interaction.editReply(`You cannot gamble more points than you have! You have ${hostAccount.points} points.`);
+            return;
+        }
 
         horses.push(hostHorse);
 
@@ -125,7 +141,9 @@ export class HorseRace extends Command {
             interaction.editReply({ embeds: [embed] });
         }
 
-        const tickInterval = setInterval(tick, 1000);
+        function startRace() {
+            const tickInterval = setInterval(tick, 1000);
+        }
 
         return interaction.editReply({ embeds: [embed] });
     }
@@ -137,10 +155,12 @@ export class HorseRace extends Command {
         return startCharacter + startSegment + horse.emoji + endSegment + endCharacter;
     }
 
-    private createHorse(userId: string, emoji: string, points: number) {
+    private async joinRace(user: User, points: number) {
+        const account = await getAccount(user);
+
         const horse: Horse = {
-            userId,
-            emoji,
+            userId: account.discordId,
+            emoji: account.emoji,
             position: 1,
             pointsGambled: points
         };

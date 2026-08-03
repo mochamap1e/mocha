@@ -189,8 +189,8 @@ export class Guess extends Command {
             //@ts-ignore
             if (collected.customId === hintButton.data.custom_id) {
                 let hint;
+                if (hints < 2) hints += 1;
 
-                hints += 1;
                 points -= pointLoss;
 
                 if (hints === 1) hint = `This level is on the ${level.position <= 75 ? "main" : "extended"} list.`;
@@ -216,8 +216,8 @@ export class Guess extends Command {
             //@ts-ignore
             if (collected.customId === revealMoreButton.data.custom_id) {
                 let pixelation;
+                if (reveals < 2) reveals += 1;
 
-                reveals += 1;
                 points -= pointLoss;
 
                 if (reveals === 1) pixelation = reveal1Pixelation;
@@ -231,7 +231,7 @@ export class Guess extends Command {
                     }
                 };
 
-                const pixelatedImage = await this.createPixelatedImage(originalImage, pixelation!);
+                const pixelatedImage = await this.createPixelatedImage(originalImage, pixelation);
 
                 await collected.update({
                     components: [row],
@@ -268,8 +268,6 @@ export class Guess extends Command {
                 if (distance(input, levelName) <= maxTypos) {
                     collected.react("\u{2705}");
                     endGame(GameEndReason.CorrectAnswer, collected.author);
-                } else {
-                    collected.react("\u{274C}");
                 }
             }
         });
