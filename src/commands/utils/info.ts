@@ -37,14 +37,14 @@ export class Info extends Command {
         let user = inputTarget ?? interaction.user;
         let account = await getAccount(inputTarget ? inputTarget : interaction.user);
 
-        const info = `
-            **Emoji**: ${account.emoji}
-            **Points**: ${account.points.toLocaleString()}
-        `;
+        const fields = [
+            `**Emoji**: ${account.emoji}`,
+            `**Points**: ${account.points.toLocaleString()}`
+        ];
 
         const embed = new EmbedBuilder()
             .setTitle(`${user.displayName}'s info:`)
-            .setDescription(info)
+            .setDescription(fields.join("\n"))
             .setThumbnail(user.avatarURL({ size: 256 }));
 
         return await interaction.editReply({
