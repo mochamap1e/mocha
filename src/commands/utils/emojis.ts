@@ -21,7 +21,7 @@ export class Emojis extends Command {
                 .setName(this.name)
                 .setDescription(this.description),
             {
-                idHints: ["1533705144930406441"]
+                idHints: []
             }
         );
     }
@@ -77,7 +77,7 @@ export class SetEmoji extends Command {
                         .setRequired(true)
                 ),
             {
-                idHints: ["1533705146666844320"]
+                idHints: []
             }
         );
     }

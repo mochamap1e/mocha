@@ -14,11 +14,13 @@ const client = new SapphireClient({
     ]
 });
 
-client.login(token);
-
 if (wipeCommands) {
     client.once(Events.ClientReady, async () => {
         await client.application?.commands.set([]);
         console.log("Wiped all commands.");
     });
 }
+
+await client.login(token);
+
+console.log(`Logged into Discord as ${client.user.displayName}`);

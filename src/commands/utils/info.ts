@@ -24,7 +24,7 @@ export class Info extends Command {
                         .setRequired(false)
                 ),
             {
-                idHints: ["1533705147551584287"]
+                idHints: []
             }
         );
     }

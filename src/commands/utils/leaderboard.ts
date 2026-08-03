@@ -23,7 +23,7 @@ export class Leaderboard extends Command {
                 .setName(this.name)
                 .setDescription(this.description),
             {
-                idHints: ["1533705148424126600"]
+                idHints: []
             }
         );
     }
