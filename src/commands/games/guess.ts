@@ -242,11 +242,13 @@ export class Guess extends Command {
             //@ts-ignore
             if (collected.customId === giveUpButton.data.custom_id) {
                 if (collected.user.id !== interaction.user.id) {
-                    interaction.reply({
-                        content: "You cannot use this action.",
-                        flags: MessageFlags.Ephemeral
-                    });
-
+                    if (!interaction.replied && !interaction.deferred) { // fix "The reply to this interaction has already been sent or deferred."
+                        interaction.reply({
+                            content: "You cannot use this action.",
+                            flags: MessageFlags.Ephemeral
+                        });
+                    }
+                    
                     return;
                 }
 
