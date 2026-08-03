@@ -36,6 +36,8 @@ const reveal2Pixelation = 10;
 
 const maxTypos = 2;
 
+let runningGames: string[] = [];
+
 enum GameEndReason {
     CorrectAnswer,
     GaveUp,
@@ -65,6 +67,11 @@ export class Guess extends Command {
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        if (runningGames.includes(interaction.user.id))
+            return interaction.reply({ content: "You are already playing this game!", flags: MessageFlags.Ephemeral });
+
+        runningGames.push(interaction.user.id);
+
         await interaction.deferReply();
 
         const channel = interaction.channel as TextChannel;
@@ -158,6 +165,9 @@ export class Guess extends Command {
                     break;
             }
 
+            const idInRunningGames = runningGames.indexOf(interaction.user.id);
+            if (idInRunningGames !== -1) runningGames.splice(idInRunningGames, 1);
+
             interaction.editReply({
                 embeds: [embed],
                 components: [],
@@ -246,14 +256,16 @@ export class Guess extends Command {
         const messageCollector = channel.createMessageCollector({ time: timeMs });
 
         messageCollector.on("collect", (collected) => {
-            const input = collected.content.toLowerCase().replace(/\s+/g, " ");
-            const levelName = level.name.toLowerCase();
+            if (!collected.author.bot) {
+                const input = collected.content.toLowerCase().replace(/\s+/g, " ");
+                const levelName = level.name.toLowerCase();
 
-            if (distance(input, levelName) <= maxTypos) {
-                collected.react("\u{2705}");
-                endGame(GameEndReason.CorrectAnswer, collected.author);
-            } else {
-                collected.react("\u{274C}");
+                if (distance(input, levelName) <= maxTypos) {
+                    collected.react("\u{2705}");
+                    endGame(GameEndReason.CorrectAnswer, collected.author);
+                } else {
+                    collected.react("\u{274C}");
+                }
             }
         });
     }
