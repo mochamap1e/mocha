@@ -8,10 +8,14 @@ const minTrackLength = 20;
 const maxTrackLength = 40;
 
 const trackCharacter = "\\_";
+const startCharacter = "[";
+const endCharacter = "]";
 
 interface Horse {
+    userId: string,
     emoji: string,
-    position: number
+    position: number,
+    pointsGambled: number
 }
 
 export class HorseRace extends Command {
@@ -74,7 +78,7 @@ export class HorseRace extends Command {
         let winners: Horse[] = [];
 
         const hostAccount = await getAccount(interaction.user);
-        const hostHorse = game.createHorse(hostAccount.emoji);
+        const hostHorse = game.createHorse(hostAccount.discordId, hostAccount.emoji, 50);
 
         horses.push(hostHorse);
 
@@ -108,6 +112,14 @@ export class HorseRace extends Command {
             if (winners.length > 0) {
                 clearInterval(tickInterval);
                 console.log("WINNER!!!!");
+                
+                console.log(`There is ${winners.length} winner. points will be multiplied by ${winners.length}`);
+
+                winners.forEach(winner => {
+                    const pointsAwarded = (winner.pointsGambled * horses.length) / winners.length;
+
+                    console.log(`${winner.userId} wins ${pointsAwarded} points!`);
+                });
             }
 
             interaction.editReply({ embeds: [embed] });
@@ -122,13 +134,15 @@ export class HorseRace extends Command {
         const startSegment = trackCharacter.repeat(position - 1);
         const endSegment = trackCharacter.repeat(length - position);
 
-        return startSegment + horse.emoji + endSegment;
+        return startCharacter + startSegment + horse.emoji + endSegment + endCharacter;
     }
 
-    private createHorse(emoji: string) {
+    private createHorse(userId: string, emoji: string, points: number) {
         const horse: Horse = {
+            userId,
             emoji,
-            position: 1
+            position: 1,
+            pointsGambled: points
         };
 
         return horse;

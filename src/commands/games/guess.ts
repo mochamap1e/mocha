@@ -17,6 +17,7 @@ import type { TextChannel, User } from "discord.js";
 
 import { db } from "@/db/client";
 import { user } from "@/db/schema";
+import { getAccount } from "@/utils/account";
 import { getList } from "@/utils/pointercrate";
 
 //////// VARIABLES
@@ -28,7 +29,7 @@ const time = 30;
 const timeMs = time * 1000;
 
 const startPoints = 100;
-const pointLoss = 15;
+const pointLoss = 18;
 
 const startPixelation = 25;
 const reveal1Pixelation = 15;
@@ -145,6 +146,8 @@ export class Guess extends Command {
 
             switch(reason) {
                 case GameEndReason.CorrectAnswer:
+                    await getAccount(winner);
+
                     const [account] = await db
                         .update(user)
                         .set({
