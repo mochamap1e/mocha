@@ -48,7 +48,7 @@ export class Emojis extends Command {
             
             message.addPageEmbed(embed =>
                 embed.setTitle("Emojis")
-                .setDescription(pageString)
+                .setDescription(`Set your emoji with /set-emoji\n\n${pageString}`)
             );
         }
 

@@ -1,8 +1,19 @@
 import { Command } from "@sapphire/framework";
-import { EmbedBuilder, ModalBuilder, TextInputBuilder, LabelBuilder, TextInputStyle, User } from "discord.js";
+import {
+    EmbedBuilder,
+    ButtonBuilder, 
+    ButtonStyle,
+    ActionRowBuilder,
+    ModalBuilder,
+    TextInputBuilder,
+    LabelBuilder,
+    TextInputStyle,
+    User,
+    ComponentType
+} from "discord.js";
 import { randomInt } from "mathjs";
 
-import { getAccount } from "@/utils/account";
+import { getAccount, modifyPoints } from "@/utils/account";
 
 const minTrackLength = 20;
 const maxTrackLength = 40;
@@ -15,8 +26,9 @@ const pointsLabel = "How many points do you want to gamble?";
 const minGamble = 10;
 
 interface Horse {
-    userId: string,
+    user: User,
     emoji: string,
+    trackLine: string,
     position: number,
     pointsGambled: number
 }
@@ -29,6 +41,13 @@ export class HorseRace extends Command {
             description: "Play a horse race with friends!"
         });
     }
+
+    private trackLength: number;
+
+    private horses: Horse[] = [];
+    private winners: Horse[] = [];
+
+    private tick: any;
 
     public override registerApplicationCommands(registry: Command.Registry) {
         registry.registerChatInputCommand((builder) =>
@@ -81,89 +100,140 @@ export class HorseRace extends Command {
 
         const game = this;
         const hostGamble = interaction.options.getInteger("points", true);
-        const trackLength = interaction.options.getInteger("track-length", false) ?? minTrackLength;
+
+        game.trackLength = interaction.options.getInteger("track-length", false) ?? minTrackLength;
 
         // SETUP
 
-        let horses: Horse[] = [];
-        let winners: Horse[] = [];
-
         const hostAccount = await getAccount(interaction.user);
-        const hostHorse = await this.joinRace(interaction.user, 50);
+        const hostHorse = await game.joinRace(interaction.user, 50);
 
         if (hostGamble > hostAccount.points) {
             interaction.editReply(`You cannot gamble more points than you have! You have ${hostAccount.points} points.`);
             return;
         }
 
-        horses.push(hostHorse);
-
-        const track1 = game.trackLine(trackLength, 1, hostHorse);
-
-        const text = `${track1}`;
-
         const embed = new EmbedBuilder()
-            .setTitle("Horse race!")
-            .setDescription(text);
+            .setTitle("Horse race!");
 
-        function tick() {
+        const joinButton = new ButtonBuilder()
+            .setCustomId("join")
+            .setLabel("\u{1F464} Join")
+            .setStyle(ButtonStyle.Primary);
+
+        const startButton = new ButtonBuilder()
+            .setCustomId("start")
+            .setLabel("\u{1F3C1} Start!")
+            .setStyle(ButtonStyle.Success);
+
+        const row = new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(joinButton, startButton);
+
+        const reply = await interaction.editReply({
+            embeds: [embed],
+            components: [row]
+        });
+
+        async function draw() {
+            let track = "";
+
+            game.horses.forEach(horse => {
+                horse.trackLine = game.trackLine(horse.position, horse.emoji);
+                track += horse.trackLine + "\n";
+            });
+
+            embed.setDescription(track);
+
+            await interaction.editReply({ embeds: [embed] });
+        }
+
+        await draw();
+
+        async function tick() {
             // Move each horse
 
-            horses.forEach(horse => {
+            game.horses.forEach(horse => {
                 const random = randomInt(1, 2);
 
                 if (random === 1) {
                     horse.position += 1;
                 }
-
-                embed.setDescription(game.trackLine(trackLength, horse.position, horse));
             });
+
+            await draw();
 
             // check if any are at the end
 
-            horses.forEach(horse => {
-                if (horse.position === trackLength) winners.push(horse);
+            game.horses.forEach(horse => {
+                if (horse.position === game.trackLength) game.winners.push(horse);
             });
 
-            if (winners.length > 0) {
-                clearInterval(tickInterval);
+            if (game.winners.length > 0) {
+                clearInterval(game.tick);
+
                 console.log("WINNER!!!!");
-                
-                console.log(`There is ${winners.length} winner. points will be multiplied by ${winners.length}`);
+                console.log(`There is ${game.winners.length} winner. points will be multiplied by ${game.winners.length}`);
 
-                winners.forEach(winner => {
-                    const pointsAwarded = (winner.pointsGambled * horses.length) / winners.length;
+                game.winners.forEach(async (winner) => {
+                    const pointsAwarded = (winner.pointsGambled * game.horses.length) / game.winners.length;
+                    const account = await modifyPoints(winner.user, "+", pointsAwarded);
 
-                    console.log(`${winner.userId} wins ${pointsAwarded} points!`);
+                    console.log(`${winner.user.displayName} wins ${pointsAwarded} points!`);
                 });
-            }
 
-            interaction.editReply({ embeds: [embed] });
+                return;
+            }
         }
 
         function startRace() {
-            const tickInterval = setInterval(tick, 1000);
+            game.tick = setInterval(tick, 1000);
         }
 
-        return interaction.editReply({ embeds: [embed] });
+        const buttonCollector = reply.createMessageComponentCollector({
+            componentType: ComponentType.Button,
+            time: 30000
+        });
+
+        buttonCollector.on("collect", async (collected) => {
+            //@ts-ignore
+            if (collected.customId === joinButton.data.custom_id) {
+                if (collected.user.id !== interaction.user.id) {
+                    
+                } else {
+                    return;
+                }
+            }
+
+            //@ts-ignore
+            if (collected.customId === startButton.data.custom_id) {
+                if (collected.user.id === interaction.user.id) {
+                    startRace();
+                } else {
+                    return;
+                }
+            }
+        });
     }
 
-    private trackLine(length: number, position: number, horse: Horse) {
+    private trackLine(position: number, emoji: string) {
         const startSegment = trackCharacter.repeat(position - 1);
-        const endSegment = trackCharacter.repeat(length - position);
+        const endSegment = trackCharacter.repeat(this.trackLength - position);
 
-        return startCharacter + startSegment + horse.emoji + endSegment + endCharacter;
+        return startCharacter + startSegment + emoji + endSegment + endCharacter;
     }
 
     private async joinRace(user: User, points: number) {
         const account = await getAccount(user);
 
         const horse: Horse = {
-            userId: account.discordId,
+            user,
             emoji: account.emoji,
+            trackLine: this.trackLine(1, account.emoji),
             position: 1,
             pointsGambled: points
         };
+        
+        this.horses.push(horse);
 
         return horse;
     }

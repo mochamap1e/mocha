@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { User } from "discord.js";
 
 import { db } from "@/db/client";
@@ -23,4 +23,16 @@ export async function getAccount(targetUser: User) {
         .returning();
 
     return createdAccount;
+}
+
+export async function modifyPoints(targetUser: User, operator: string, points: number) {
+    const [account] = await db
+        .update(user)
+        .set({
+            points: sql`${user.points} ${sql.raw(operator)} ${points}`
+        })
+        .where(eq(user.discordId, targetUser.id))
+        .returning();
+
+    return account;
 }

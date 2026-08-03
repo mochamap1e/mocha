@@ -15,9 +15,7 @@ import {
 import type { Sharp } from "sharp";
 import type { TextChannel, User } from "discord.js";
 
-import { db } from "@/db/client";
-import { user } from "@/db/schema";
-import { getAccount } from "@/utils/account";
+import { modifyPoints } from "@/utils/account";
 import { getList } from "@/utils/pointercrate";
 
 //////// VARIABLES
@@ -146,17 +144,9 @@ export class Guess extends Command {
 
             switch(reason) {
                 case GameEndReason.CorrectAnswer:
-                    await getAccount(winner);
+                    const account = await modifyPoints(winner, "+", points);
 
-                    const [account] = await db
-                        .update(user)
-                        .set({
-                            points: sql`${user.points} + ${points}`
-                        })
-                        .where(eq(user.discordId, winner!.id))
-                        .returning();
-
-                    embed.setDescription(`<@${winner!.id}> got it. ${answerString}\n\n(+${points} points, total ${account!.points.toLocaleString()} points)`);
+                    embed.setDescription(`<@${winner.id}> got it. ${answerString}\n\n(+${points} points, total ${account.points.toLocaleString()} points)`);
 
                     break;
                 case GameEndReason.GaveUp:
