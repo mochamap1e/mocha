@@ -305,8 +305,19 @@ export class Guess extends Command {
         const pixelatedWidth = smallWidth * pixelSize;
         const pixelatedHeight = smallHeight * pixelSize;
 
-        const smallImage = sharp(await image.clone().resize(smallWidth, smallHeight, { kernel: sharp.kernel.nearest }).toBuffer());
-        const pixelatedImage = smallImage.resize(pixelatedWidth, pixelatedHeight, { kernel: sharp.kernel.nearest });
+        console.log("Metadata width:", metadata.width);
+        console.log("Metadata height:", metadata.height);
+        console.log("Pixelated width:", pixelatedWidth);
+        console.log("Pixelated height:", pixelatedHeight);
+
+        const clone = image.clone();
+        const cloneMetadata = await clone.metadata();
+
+        console.log("Clone width:", cloneMetadata.width);
+        console.log("Clone height:", cloneMetadata.height);
+
+        const smallImage = await clone.resize(smallWidth, smallHeight, { kernel: sharp.kernel.nearest }).toBuffer();
+        const pixelatedImage = sharp(smallImage).resize(pixelatedWidth, pixelatedHeight, { kernel: sharp.kernel.nearest });
 
         return new AttachmentBuilder(pixelatedImage, { name: imageName });
     }
