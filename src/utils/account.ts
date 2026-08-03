@@ -26,6 +26,8 @@ export async function getAccount(targetUser: User) {
 }
 
 export async function modifyPoints(targetUser: User, operator: string, points: number) {
+    await getAccount(targetUser);
+
     const [account] = await db
         .update(user)
         .set({
