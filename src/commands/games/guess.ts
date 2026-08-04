@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import { eq, sql } from "drizzle-orm";
+import { distance } from "fastest-levenshtein";
 import { Command } from "@sapphire/framework";
 import {
     AttachmentBuilder,
@@ -33,6 +34,8 @@ const pointLoss = 18;
 const startPixelation = 25;
 const reveal1Pixelation = 15;
 const reveal2Pixelation = 10;
+
+const maxTypos = 2;
 
 let runningGames: string[] = [];
 
@@ -321,7 +324,7 @@ export class Guess extends Command {
                 const input = collected.content.toLowerCase().replace(/\s+/g, " ");
                 const levelName = level.name.toLowerCase();
 
-                if (input === levelName) {
+                if (distance(input, levelName) <= maxTypos) {
                     collected.react("\u{2705}");
                     endGame(GameEndReason.CorrectAnswer, collected.author);
                 } else {
