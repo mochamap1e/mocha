@@ -28,8 +28,7 @@ export class Emojis extends Command {
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
         const message = new PaginatedMessage();
-
-        const emojisPerPage = 12;
+        const emojisPerPage = 10;
 
         message.setActions(PaginatedMessage.defaultActions.filter((action: any) =>
             action.customId === "@sapphire/paginated-messages.previousPage" ||

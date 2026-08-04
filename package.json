@@ -16,7 +16,6 @@
         "@sapphire/time-utilities": "^1.7.14",
         "discord.js": "^14.27.0",
         "drizzle-orm": "^0.45.2",
-        "fastest-levenshtein": "^1.0.16",
         "mathjs": "^15.2.0",
         "pg": "^8.22.0",
         "sharp": "^0.35.3"

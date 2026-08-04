@@ -1,7 +1,5 @@
 import sharp from "sharp";
-import { randomInt } from "mathjs";
-import { sql, eq } from "drizzle-orm";
-import { distance } from "fastest-levenshtein";
+import { eq, sql } from "drizzle-orm";
 import { Command } from "@sapphire/framework";
 import {
     AttachmentBuilder,
@@ -12,19 +10,22 @@ import {
     ComponentType,
     MessageFlags,
 } from "discord.js";
-import type { Sharp } from "sharp";
-import type { TextChannel, User } from "discord.js";
 
-import { modifyPoints } from "@/utils/account";
-import { getList } from "@/utils/pointercrate";
+import { db } from "@/db/client";
+import { user } from "@/db/schema";
+import { pointercrate, global, aredl } from "@/utils/lists";
+import { getAccount, modifyPoints } from "@/utils/account";
+
+import type { Sharp } from "sharp";
+import type { ButtonInteraction, TextChannel, User } from "discord.js";
+import type { ListIntegration } from "@/classes/listIntegration";
 
 //////// VARIABLES
 
 const imageName = "level.jpg";
 const imageUrl = "attachment://" + imageName;
 
-const time = 30;
-const timeMs = time * 1000;
+const time = 30000;
 
 const startPoints = 100;
 const pointLoss = 18;
@@ -32,8 +33,6 @@ const pointLoss = 18;
 const startPixelation = 25;
 const reveal1Pixelation = 15;
 const reveal2Pixelation = 10;
-
-const maxTypos = 2;
 
 let runningGames: string[] = [];
 
@@ -58,7 +57,13 @@ export class Guess extends Command {
         registry.registerChatInputCommand((builder) =>
             builder
                 .setName(this.name)
-                .setDescription(this.description),
+                .setDescription(this.description)
+                .addIntegerOption(option =>
+                    option
+                        .setName("list")
+                        .setDescription("Which list to use. 1 = Pointercrate, 2 = Global Demonlist, 3 = AREDL")
+                        .setRequired(false)
+                ),
             {
                 idHints: []
             }
@@ -69,24 +74,36 @@ export class Guess extends Command {
         if (runningGames.includes(interaction.user.id))
             return interaction.reply({ content: "You are already playing this game!", flags: MessageFlags.Ephemeral });
 
-        runningGames.push(interaction.user.id);
+        const listInput = interaction.options.getInteger("list", false);
 
+        if (!listInput || listInput === 1) {
+            this.game(interaction, pointercrate, "Pointercrate");
+        } else if (listInput === 2) {
+            this.game(interaction, global, "Global Demonlist");
+        } else if (listInput === 3) {
+            this.game(interaction, aredl, "AREDL");
+        } else {
+            return interaction.reply({ content: "Invalid list!", flags: MessageFlags.Ephemeral });
+        }
+    }
+
+    private async game(interaction: Command.ChatInputCommandInteraction | ButtonInteraction, list: ListIntegration, listName: string) {
         await interaction.deferReply();
+
+        runningGames.push(interaction.user.id);
 
         const channel = interaction.channel as TextChannel;
 
-        ////////// SETUP //////////
-
-        const list = getList(); if (!list) return interaction.editReply("For some reason I don't have access to the current demonlist.");
-        const level = list[randomInt(0, list.length)]!;
+        const game = this;
+        const level = await list.getRandomLevel();
 
         ////////// EMBED //////////
 
         // embed
 
         const embed = new EmbedBuilder()
-            .setTitle("Guess the list level!")
-            .setDescription(`You have ${time} seconds.\n`)
+            .setTitle(`Guess the list level! (${listName})`)
+            .setDescription(`You have ${time / 1000} seconds.\n`)
             .setImage(imageUrl);
 
         // buttons
@@ -114,12 +131,13 @@ export class Guess extends Command {
         let points = startPoints;
         let hints = 0;
         let reveals = 0;
-        let ended = false
+        let ended = false;
+        let playedAgain = false;
 
-        const originalImage = await this.createOriginalImage(level.level_id);
+        const originalImage = await game.createOriginalImage(level.level_id);
         const originalImageAttachment = new AttachmentBuilder(originalImage, { name: imageName });
 
-        const pixelatedImage = await this.createPixelatedImage(originalImage, startPixelation);
+        const pixelatedImage = await game.createPixelatedImage(originalImage, startPixelation);
 
         const reply = await interaction.editReply({
             embeds: [embed],
@@ -127,7 +145,7 @@ export class Guess extends Command {
             files: [pixelatedImage]
         });
 
-        const timer = setTimeout(() => endGame(GameEndReason.TimeUp), timeMs);
+        const timer = setTimeout(() => endGame(GameEndReason.TimeUp), time);
 
         async function endGame(reason: GameEndReason, winner?: User) {
             if (ended) return;
@@ -138,15 +156,36 @@ export class Guess extends Command {
             buttonCollector.stop();
             messageCollector.stop();
 
-            const answerString = `The level was ${level.name}.`;
+            const answerString = `The level was ${level.name} (#${level.position})`;
 
             embed.setTitle("Game over!");
 
             switch(reason) {
                 case GameEndReason.CorrectAnswer:
-                    const account = await modifyPoints(winner, "+", points);
+                    const account = await getAccount(winner);
 
-                    embed.setDescription(`<@${winner.id}> got it. ${answerString}\n\n(+${points} points, total ${account.points.toLocaleString()} points)`);
+                    const hasStreak = account.guessStreak > 0;
+
+                    if (hasStreak) {
+                        points *= (account.guessStreak + 1);
+                    };
+
+                    const [updatedAccount] = await db
+                        .update(user)
+                        .set({
+                            points: sql`${user.points} + ${points}`,
+                            guessStreak: sql`${user.guessStreak} + 1`
+                        })
+                        .where(eq(user.discordId, winner.id))
+                        .returning();
+
+                    const fields = [
+                        `<@${winner.id}> got it. ${answerString}`,
+                        `+${points} points ${hasStreak ? `(${updatedAccount.guessStreak}x streak! \u{1F525})` : ""} ` +
+                        `| total ${updatedAccount.points.toLocaleString()} points`
+                    ];
+
+                    embed.setDescription(fields.join("\n\n"));
 
                     break;
                 case GameEndReason.GaveUp:
@@ -161,32 +200,59 @@ export class Guess extends Command {
             const idInRunningGames = runningGames.indexOf(interaction.user.id);
             if (idInRunningGames !== -1) runningGames.splice(idInRunningGames, 1);
 
+            const playAgainButton = new ButtonBuilder()
+                .setCustomId("again")
+                .setLabel(`\u{1F501} Play again`)
+                .setStyle(ButtonStyle.Success);
+
+            const row = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(playAgainButton);
+
             interaction.editReply({
                 embeds: [embed],
-                components: [],
+                components: [row],
                 files: [originalImageAttachment]
             });
+
+            const buttonCollector2 = reply.createMessageComponentCollector({ componentType: ComponentType.Button, time });
+
+            buttonCollector2.on("collect", async (collected) => {
+                //@ts-ignore
+                if (collected.customId === playAgainButton.data.custom_id) {
+                    if (!playedAgain) {
+                        playedAgain = true;
+
+                        interaction.editReply({ components: [] });
+
+                        game.game(collected, list, listName);
+
+                        return;
+                    }
+                }
+            });
+
+            setTimeout(() => {
+                if (!playedAgain) {
+                    interaction.editReply({ components: [] });
+                }
+            }, time);
         }
 
         // BUTTON HANDLER
 
-        const buttonCollector = reply.createMessageComponentCollector({
-            componentType: ComponentType.Button,
-            time: timeMs
-        });
+        const buttonCollector = reply.createMessageComponentCollector({ componentType: ComponentType.Button, time });
 
         buttonCollector.on("collect", async (collected) => {
             //@ts-ignore
             if (collected.customId === hintButton.data.custom_id) {
                 let hint;
-                if (hints < 3) hints += 1;
+                if (hints < 2) hints += 1;
 
                 points -= pointLoss;
 
-                if (hints === 1) hint = `This level is on the ${level.position <= 75 ? "main" : "extended"} list.`;
-                if (hints === 2) hint = `This level was published by ${level.publisher.name}.`;
-                if (hints === 3) {
-                    hint = `This level was verified by ${level.verifier.name}.`;
+                if (hints === 1) hint = `This level was published by ${level.publisher}.`;
+                if (hints === 2) {
+                    hint = `This level was verified by ${level.verifier}.`;
 
                     if (reveals < 2) {
                         row.setComponents(revealMoreButton, giveUpButton)
@@ -221,7 +287,7 @@ export class Guess extends Command {
                     }
                 };
 
-                const pixelatedImage = await this.createPixelatedImage(originalImage, pixelation);
+                const pixelatedImage = await game.createPixelatedImage(originalImage, pixelation);
 
                 await collected.update({
                     components: [row],
@@ -248,16 +314,25 @@ export class Guess extends Command {
 
         // ANSWER HANDLER
 
-        const messageCollector = channel.createMessageCollector({ time: timeMs });
+        const messageCollector = channel.createMessageCollector({ time });
 
-        messageCollector.on("collect", (collected) => {
+        messageCollector.on("collect", async (collected) => {
             if (!collected.author.bot) {
                 const input = collected.content.toLowerCase().replace(/\s+/g, " ");
                 const levelName = level.name.toLowerCase();
 
-                if (distance(input, levelName) <= maxTypos) {
+                if (input === levelName) {
                     collected.react("\u{2705}");
                     endGame(GameEndReason.CorrectAnswer, collected.author);
+                } else {
+                    const account = await getAccount(collected.author);
+                    
+                    if (account.guessStreak > 0) {
+                        await db
+                            .update(user)
+                            .set({ guessStreak: 0 })
+                            .where(eq(user.discordId, collected.author.id));
+                    }
                 }
             }
         });
@@ -285,19 +360,7 @@ export class Guess extends Command {
         const pixelatedWidth = smallWidth * pixelSize;
         const pixelatedHeight = smallHeight * pixelSize;
 
-        console.log("Pixel size:", pixelSize);
-        console.log("Small width:", smallWidth);
-        console.log("Small height:", smallHeight);
-        console.log("Metadata width:", metadata.width);
-        console.log("Metadata height:", metadata.height);
-        console.log("Pixelated width:", pixelatedWidth);
-        console.log("Pixelated height:", pixelatedHeight);
-
         const clone = image.clone();
-        const cloneMetadata = await clone.metadata();
-
-        console.log("Clone width:", cloneMetadata.width);
-        console.log("Clone height:", cloneMetadata.height);
 
         const smallImage = await clone.resize(smallWidth, smallHeight, { kernel: sharp.kernel.nearest }).toBuffer();
         const pixelatedImage = sharp(smallImage).resize(pixelatedWidth, pixelatedHeight, { kernel: sharp.kernel.nearest });

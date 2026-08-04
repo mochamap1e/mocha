@@ -1,5 +1,5 @@
 import { Command } from "@sapphire/framework";
-import { EmbedBuilder, MessageFlags, TextChannel } from "discord.js";
+import { PaginatedMessage } from "@sapphire/discord.js-utilities";
 import { desc } from "drizzle-orm";
 
 import { db } from "@/db/client";
@@ -29,12 +29,15 @@ export class Leaderboard extends Command {
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        await interaction.deferReply();
 
         const now = Date.now();
 
         if (now - lastRunTime >= delay) {
             lastRunTime = now;
+
+            const message = new PaginatedMessage();
+            const usersPerPage = 10;
 
             await interaction.guild?.members.fetch();
 
@@ -48,21 +51,23 @@ export class Leaderboard extends Command {
                 interaction.guild!.members.cache.has(account.discordId)
             );
 
-            let rankingString = "";
+            for (let i = 0; i < ranking.length; i += usersPerPage) {
+                const section = ranking.slice(i, i + usersPerPage);
 
-            ranking.forEach((account, index) => {
-                index = index + 1;
-                rankingString += `**#${index}**: ${account.emoji} <@${account.discordId}> - ${account.points.toLocaleString()} points\n`;
-            });
+                let pageString = "";
 
-            const embed = new EmbedBuilder()
-                .setTitle(`Points leaderboard for ${interaction.guild?.name}`)
-                .setDescription(rankingString);
+                section.forEach((account, index) => {
+                    index = index + 1;
+                    pageString += `**#${index}**: ${account.emoji} <@${account.discordId}> - ${account.points.toLocaleString()} points\n`;
+                });
 
-            const channel = interaction.channel as TextChannel;
+                message.addPageEmbed(embed => 
+                    embed.setTitle(`Points leaderboard for ${interaction.guild?.name}`)
+                    .setDescription(pageString)
+                )
+            }
 
-            await interaction.deleteReply().catch(e => {});
-            await channel.send({ embeds: [embed] });
+            await message.run(interaction);
         } else {
             await interaction.editReply({ content: `You can run this command <t:${Math.round((lastRunTime + delay) / 1000)}:R>` });
         }

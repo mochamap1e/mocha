@@ -7,6 +7,7 @@ export const user = pgTable("user", {
 
     // stats
     points: integer().notNull().default(0),
+    guessStreak: integer().notNull().default(0),
 
     // misc
     emoji: varchar().notNull().default("<:unrated:1533700573415739462>"),
