@@ -53,7 +53,7 @@ export class Fish extends Command {
         const account = await modifyPoints(interaction.user, "+", fish.points);
 
         return interaction.editReply(
-            `Caught ${fish.prefix} ${fish.rarity} fish! ${fish.emoji} ` +
+            `Caught ${fish.prefix} ${fish.rarity} fish ${fish.emoji}! ` +
             `(+${fish.points.toLocaleString()} points | total ${account.points.toLocaleString()} points)`
         );
     }

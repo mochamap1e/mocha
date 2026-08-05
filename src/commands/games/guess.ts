@@ -190,7 +190,7 @@ export class Guess extends Command {
                         .update(user)
                         .set({
                             points: sql`${user.points} + ${points}`,
-                            guessStreak: hasMaxStreak ? maxStreak : sql`${user.guessStreak} + 1`
+                            guessStreak: sql`${user.guessStreak} + 1`
                         })
                         .where(eq(user.discordId, winner.id))
                         .returning();
