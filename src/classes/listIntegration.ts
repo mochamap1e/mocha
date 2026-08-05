@@ -8,8 +8,10 @@ export abstract class ListIntegration {
         return this.list;
     };
 
-    public async getRandomLevel(): Promise<ListLevel> {
-        return this.list[randomInt(0, this.list.length)];
+    public async getRandomLevel(limit?: number): Promise<ListLevel> {
+        if ((!limit) || (limit >= this.list.length)) limit = this.list.length;
+        
+        return this.list[randomInt(0, limit)];
     }
 
     public abstract updateList(): Promise<void>;

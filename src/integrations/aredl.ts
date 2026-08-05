@@ -31,8 +31,10 @@ export class AREDLIntegration extends ListIntegration {
         });
     }
 
-    override async getRandomLevel() {
-        const level = this.list[randomInt(0, this.list.length)];
+    override async getRandomLevel(limit?: number) {
+        if ((!limit) || (limit >= this.list.length)) limit = this.list.length;
+
+        const level = this.list[randomInt(0, limit)];
         const response = await (await fetch(this.api + level.level_id)).json() as Level;
 
         const data: ListLevel = {

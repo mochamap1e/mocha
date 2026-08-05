@@ -10,12 +10,13 @@ import {
     ButtonStyle,
     ComponentType,
     MessageFlags,
+    chatInputApplicationCommandMention,
 } from "discord.js";
 
 import { db } from "@/db/client";
 import { user } from "@/db/schema";
 import { pointercrate, global, aredl } from "@/utils/lists";
-import { getAccount, modifyPoints } from "@/utils/account";
+import { getAccount } from "@/utils/account";
 
 import type { Sharp } from "sharp";
 import type { ButtonInteraction, TextChannel, User } from "discord.js";
@@ -65,6 +66,15 @@ export class Guess extends Command {
                     option
                         .setName("list")
                         .setDescription("Which list to use. 1 = Pointercrate, 2 = Global Demonlist, 3 = AREDL")
+                        .setMinValue(1)
+                        .setMaxValue(3)
+                        .setRequired(false)
+                )
+                .addIntegerOption(option =>
+                    option
+                        .setName("limit")
+                        .setDescription("How far back in the list to go (default: 150)")
+                        .setMinValue(150)
                         .setRequired(false)
                 ),
             {
@@ -78,19 +88,18 @@ export class Guess extends Command {
             return interaction.reply({ content: "You are already playing this game!", flags: MessageFlags.Ephemeral });
 
         const listInput = interaction.options.getInteger("list", false);
+        const limitInput = interaction.options.getInteger("limit", false);
 
         if (!listInput || listInput === 1) {
             this.game(interaction, pointercrate, "Pointercrate");
         } else if (listInput === 2) {
-            this.game(interaction, global, "Global Demonlist");
+            this.game(interaction, global, "Global Demonlist", limitInput);
         } else if (listInput === 3) {
-            this.game(interaction, aredl, "AREDL");
-        } else {
-            return interaction.reply({ content: "Invalid list!", flags: MessageFlags.Ephemeral });
+            this.game(interaction, aredl, "AREDL", limitInput);
         }
     }
 
-    private async game(interaction: Command.ChatInputCommandInteraction | ButtonInteraction, list: ListIntegration, listName: string) {
+    private async game(interaction: Command.ChatInputCommandInteraction | ButtonInteraction, list: ListIntegration, listName: string, limit?: number) {
         await interaction.deferReply();
 
         runningGames.push(interaction.user.id);
@@ -98,14 +107,14 @@ export class Guess extends Command {
         const channel = interaction.channel as TextChannel;
 
         const game = this;
-        const level = await list.getRandomLevel();
+        const level = await list.getRandomLevel(limit ?? 150);
 
         ////////// EMBED //////////
 
         // embed
 
         const embed = new EmbedBuilder()
-            .setTitle(`Guess the list level! (${listName})`)
+            .setTitle(`Guess the list level! (${listName}`)
             .setDescription(`You have ${time / 1000} seconds.\n`)
             .setImage(imageUrl);
 
@@ -227,7 +236,7 @@ export class Guess extends Command {
 
                         interaction.editReply({ components: [] });
 
-                        game.game(collected, list, listName);
+                        game.game(collected, list, listName, limit);
 
                         return;
                     }
