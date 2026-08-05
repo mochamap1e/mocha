@@ -37,6 +37,7 @@ const reveal1Pixelation = 15;
 const reveal2Pixelation = 10;
 
 const maxTypos = 2;
+const maxStreak = 10;
 
 let runningGames: string[] = [];
 
@@ -115,7 +116,7 @@ export class Guess extends Command {
 
         const embed = new EmbedBuilder()
             .setTitle(`Guess the list level! (${listName})`)
-            .setDescription(`You have ${time / 1000} seconds.\n`)
+            .setDescription(`You have ${time / 1000} seconds.\n${level.name}`)
             .setImage(imageUrl);
 
         // buttons
@@ -180,16 +181,17 @@ export class Guess extends Command {
                     const account = await getAccount(winner);
 
                     const hasStreak = account.guessStreak > 0;
+                    const hasMaxStreak = account.guessStreak >= maxStreak;
 
                     if (hasStreak) {
-                        points *= (account.guessStreak + 1);
+                        points *= (hasMaxStreak ? maxStreak : (account.guessStreak + 1));
                     };
 
                     const [updatedAccount] = await db
                         .update(user)
                         .set({
                             points: sql`${user.points} + ${points}`,
-                            guessStreak: sql`${user.guessStreak} + 1`
+                            guessStreak: hasMaxStreak ? maxStreak : sql`${user.guessStreak} + 1`
                         })
                         .where(eq(user.discordId, winner.id))
                         .returning();
