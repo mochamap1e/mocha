@@ -12,6 +12,7 @@ interface Fishy {
 }
 
 const fishies: Fishy[] = [
+    { prefix: "a", rarity: "chopped", chance: 50, points: 1, emoji: "<:duuuughghhhhh:1533697799328235632>" },
     { prefix: "an", rarity: "unrated", chance: 40, points: 5, emoji: "<:unrated:1533700573415739462>" },
     { prefix: "an", rarity: "auto", chance: 30, points: 10, emoji: "<:auto:1533700565354152068>" },
     { prefix: "an", rarity: "easy", chance: 20, points: 25, emoji: "<:easy:1533700567057043536>" },
