@@ -10,7 +10,6 @@ import {
     ButtonStyle,
     ComponentType,
     MessageFlags,
-    chatInputApplicationCommandMention,
 } from "discord.js";
 
 import { db } from "@/db/client";
