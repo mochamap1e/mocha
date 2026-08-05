@@ -114,7 +114,7 @@ export class Guess extends Command {
         // embed
 
         const embed = new EmbedBuilder()
-            .setTitle(`Guess the list level! (${listName}`)
+            .setTitle(`Guess the list level! (${listName})`)
             .setDescription(`You have ${time / 1000} seconds.\n`)
             .setImage(imageUrl);
 
