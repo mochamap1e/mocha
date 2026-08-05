@@ -157,7 +157,10 @@ export class Guess extends Command {
             files: [pixelatedImage]
         });
 
-        const timer = setTimeout(() => endGame(GameEndReason.TimeUp), time);
+        const timer = setTimeout(async () => {
+            await game.clearStreak(interaction.user);
+            endGame(GameEndReason.TimeUp);
+        }, time);
 
         async function endGame(reason: GameEndReason, winner?: User) {
             if (ended) return;
@@ -202,7 +205,6 @@ export class Guess extends Command {
                     break;
                 case GameEndReason.GaveUp:
                     embed.setDescription(`<@${interaction.user.id}> gave up. ${answerString}`);
-
                     break;
                 case GameEndReason.TimeUp:
                     embed.setTitle("Time's up!");
@@ -321,14 +323,7 @@ export class Guess extends Command {
                     return;
                 }
 
-                const account = await getAccount(collected.user);
-                    
-                if (account.guessStreak > 0) {
-                    await db
-                        .update(user)
-                        .set({ guessStreak: 0 })
-                        .where(eq(user.discordId, collected.user.id));
-                }
+                await game.clearStreak(collected.user);
 
                 endGame(GameEndReason.GaveUp, collected.user);
             }
@@ -347,14 +342,7 @@ export class Guess extends Command {
                     collected.react("\u{2705}");
                     endGame(GameEndReason.CorrectAnswer, collected.author);
                 } else {
-                    const account = await getAccount(collected.author);
-                    
-                    if (account.guessStreak > 0) {
-                        await db
-                            .update(user)
-                            .set({ guessStreak: 0 })
-                            .where(eq(user.discordId, collected.author.id));
-                    }
+                    game.clearStreak(collected.author);
                 }
             }
         });
@@ -388,5 +376,18 @@ export class Guess extends Command {
         const pixelatedImage = sharp(smallImage).resize(pixelatedWidth, pixelatedHeight, { kernel: sharp.kernel.nearest });
 
         return new AttachmentBuilder(pixelatedImage, { name: imageName });
+    }
+
+    private async clearStreak(targetUser: User) {
+        console.log("clearing streak for", targetUser.displayName);
+
+        const account = await getAccount(targetUser);
+                    
+        if (account.guessStreak > 0) {
+            await db
+                .update(user)
+                .set({ guessStreak: 0 })
+                .where(eq(user.discordId, targetUser.id));
+        }
     }
 }
