@@ -39,6 +39,11 @@ export class Leaderboard extends Command {
             const message = new PaginatedMessage();
             const usersPerPage = 10;
 
+            message.setActions(PaginatedMessage.defaultActions.filter((action: any) =>
+                action.customId === "@sapphire/paginated-messages.previousPage" ||
+                action.customId === "@sapphire/paginated-messages.nextPage"
+            ));
+
             await interaction.guild?.members.fetch();
 
             let ranking = await db
