@@ -18,7 +18,7 @@ const Operator = {
 }
 
 const fishies: Fishy[] = [
-    { prefix: "a", rarity: "chopped", chance: 10, operator: Operator.Subtract, points: 25, emoji: "<:duuuughghhhhh:1533697799328235632>" },
+    { prefix: "a", rarity: "chopped", chance: 30, operator: Operator.Subtract, points: 25, emoji: "<:duuuughghhhhh:1533697799328235632>" },
 
     { prefix: "an", rarity: "unrated", chance: 40, operator: Operator.Add, points: 5, emoji: "<:unrated:1533700573415739462>" },
     { prefix: "an", rarity: "auto", chance: 30, operator: Operator.Add, points: 10, emoji: "<:auto:1533700565354152068>" },
@@ -32,7 +32,7 @@ const fishies: Fishy[] = [
     { prefix: "a", rarity: "hard demon", chance: 2, operator: Operator.Add, points: 750, emoji: "<:HardDemon:1533570528424755400>" },
     { prefix: "an", rarity: "insane demon", chance: 1, operator: Operator.Add, points: 1000, emoji: "<:InsaneDemon:1533570530182168788>" },
     { prefix: "an", rarity: "extreme demon", chance: 0.5, operator: Operator.Add, points: 2000, emoji: "<:ExtremeDemon:1533570526797234277>" },
-    { prefix: "an", rarity: "INFINITE DEMON", chance: 0.01, operator: Operator.Add, points: 50000, emoji: "<:infinitedemon:1533697800095924244>" },
+    { prefix: "an", rarity: "INFINITE DEMON", chance: 0.01, operator: Operator.Add, points: 100000, emoji: "<:infinitedemon:1533697800095924244>" },
 ];
 
 const time = 30000;
