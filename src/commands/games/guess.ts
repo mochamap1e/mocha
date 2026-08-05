@@ -379,8 +379,6 @@ export class Guess extends Command {
     }
 
     private async clearStreak(targetUser: User) {
-        console.log("clearing streak for", targetUser.displayName);
-
         const account = await getAccount(targetUser);
                     
         if (account.guessStreak > 0) {
