@@ -1,5 +1,15 @@
 import { Listener, Events } from "@sapphire/framework";
 import { Message, MessageType, TextChannel } from "discord.js";
+import { randomInt } from "mathjs";
+
+const messages = [
+    "yo",
+    "hi",
+    "hey",
+    "hello",
+    "wassup",
+    "sup"
+];
 
 export class PingListener extends Listener {
     public constructor(context: Listener.LoaderContext, options: Listener.Options) {
@@ -17,7 +27,7 @@ export class PingListener extends Listener {
         if (message.mentions.has(this.container.client.user)) {
             const channel = message.channel as TextChannel;
             
-            return await channel.send("yo");
+            return await channel.send(messages[randomInt(0, messages.length)]);
         }
     }
 }
