@@ -1,7 +1,7 @@
 import { Command } from "@sapphire/framework";
 import { ButtonBuilder, ActionRowBuilder, ButtonStyle, ComponentType, ButtonInteraction } from "discord.js";
 
-import { getAccount, modifyPoints } from "@/utils/account";
+import { modifyPoints } from "@/utils/account";
 
 interface Fishy {
     prefix: string,
