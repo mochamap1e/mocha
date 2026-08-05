@@ -9,7 +9,7 @@ interface Level {
 }
 
 export class GlobalIntegration extends ListIntegration {
-    api = "https://api.demonlist.org/level/classic/list?limit=150";
+    api = "https://api.demonlist.org/level/classic/list?limit=2500";
 
     override async updateList() {
         const response = await (await fetch(this.api)).json() as any;

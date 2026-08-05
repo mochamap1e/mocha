@@ -106,12 +106,13 @@ export class HorseRace extends Command {
         // SETUP
 
         const hostAccount = await getAccount(interaction.user);
-        const hostHorse = await game.joinRace(interaction.user, 50);
 
         if (hostGamble > hostAccount.points) {
             interaction.editReply(`You cannot gamble more points than you have! You have ${hostAccount.points} points.`);
             return;
         }
+
+        await game.joinRace(interaction.user, hostGamble);
 
         const embed = new EmbedBuilder()
             .setTitle("Horse race!");
@@ -185,7 +186,8 @@ export class HorseRace extends Command {
             }
         }
 
-        function startRace() {
+        async function startRace() {
+            await interaction.editReply({ components: [] });
             game.tick = setInterval(tick, 1000);
         }
 
@@ -197,8 +199,11 @@ export class HorseRace extends Command {
         buttonCollector.on("collect", async (collected) => {
             //@ts-ignore
             if (collected.customId === joinButton.data.custom_id) {
-                if (collected.user.id !== interaction.user.id) {
-                    
+                if (collected.user.id !== interaction.user.id)
+                    //&& (!this.horses.find(horse => horse.user === collected.user)))
+                {
+                    await game.joinRace(collected.user, 50);
+                    collected.deferUpdate();
                 } else {
                     return;
                 }
@@ -207,7 +212,8 @@ export class HorseRace extends Command {
             //@ts-ignore
             if (collected.customId === startButton.data.custom_id) {
                 if (collected.user.id === interaction.user.id) {
-                    startRace();
+                    await startRace();
+                    collected.deferUpdate();
                 } else {
                     return;
                 }
