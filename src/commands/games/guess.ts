@@ -73,7 +73,7 @@ export class Guess extends Command {
                 .addIntegerOption(option =>
                     option
                         .setName("limit")
-                        .setDescription("How far back in the list to go (default: 150)")
+                        .setDescription("How far back in the list to go")
                         .setMinValue(150)
                         .setRequired(false)
                 ),
@@ -107,7 +107,7 @@ export class Guess extends Command {
         const channel = interaction.channel as TextChannel;
 
         const game = this;
-        const level = await list.getRandomLevel(limit ?? 150);
+        const level = await list.getRandomLevel(limit);
 
         ////////// EMBED //////////
 
