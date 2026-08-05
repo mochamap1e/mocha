@@ -202,6 +202,7 @@ export class Guess extends Command {
                     break;
                 case GameEndReason.GaveUp:
                     embed.setDescription(`<@${interaction.user.id}> gave up. ${answerString}`);
+
                     break;
                 case GameEndReason.TimeUp:
                     embed.setTitle("Time's up!");
@@ -318,6 +319,15 @@ export class Guess extends Command {
                     }
                     
                     return;
+                }
+
+                const account = await getAccount(collected.user);
+                    
+                if (account.guessStreak > 0) {
+                    await db
+                        .update(user)
+                        .set({ guessStreak: 0 })
+                        .where(eq(user.discordId, collected.user.id));
                 }
 
                 endGame(GameEndReason.GaveUp, collected.user);
