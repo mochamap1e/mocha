@@ -122,17 +122,20 @@ export class Guess extends Command {
 
         const hintButton = new ButtonBuilder()
             .setCustomId("hint")
-            .setLabel("\u{1F4A1} Hint")
+            .setLabel("Hint")
+            .setEmoji("\u{1F4A1}")
             .setStyle(ButtonStyle.Primary);
 
         const revealMoreButton = new ButtonBuilder()
             .setCustomId("revealMore")
-            .setLabel("\u{1F441}\u{FE0F} Reveal more")
+            .setLabel("Reveal more")
+            .setEmoji("\u{1F441}\u{FE0F}")
             .setStyle(ButtonStyle.Primary);
 
         const giveUpButton = new ButtonBuilder()
             .setCustomId("giveUp")
-            .setLabel("\u{274C} Give up")
+            .setLabel("Give up")
+            .setEmoji("\u{274C}")
             .setStyle(ButtonStyle.Danger);
 
         const row = new ActionRowBuilder<ButtonBuilder>()
@@ -218,7 +221,8 @@ export class Guess extends Command {
 
             const playAgainButton = new ButtonBuilder()
                 .setCustomId("again")
-                .setLabel(`\u{1F501} Play again`)
+                .setLabel("Play again")
+                .setEmoji("\u{1F501}")
                 .setStyle(ButtonStyle.Success);
 
             const row = new ActionRowBuilder<ButtonBuilder>()
@@ -236,6 +240,8 @@ export class Guess extends Command {
                 //@ts-ignore
                 if (collected.customId === playAgainButton.data.custom_id) {
                     if (!playedAgain) {
+                        buttonCollector2.stop();
+                        
                         playedAgain = true;
 
                         interaction.editReply({ components: [] });

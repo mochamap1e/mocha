@@ -1,5 +1,7 @@
-import { modifyPoints } from "@/utils/account";
 import { Command } from "@sapphire/framework";
+import { ButtonBuilder, ActionRowBuilder, ButtonStyle, ComponentType, ButtonInteraction } from "discord.js";
+
+import { modifyPoints } from "@/utils/account";
 
 interface Fishy {
     prefix: string,
@@ -46,16 +48,48 @@ export class Fish extends Command {
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
+        this.fish(interaction);
+    }
+
+    private async fish(interaction: Command.ChatInputCommandInteraction | ButtonInteraction) {
         await interaction.deferReply();
+
+        let fishedAgain = false;
 
         const fish = this.getRandomFish();
 
         const account = await modifyPoints(interaction.user, "+", fish.points);
 
-        return interaction.editReply(
-            `Caught ${fish.prefix} ${fish.rarity} fish ${fish.emoji}! ` +
-            `(+${fish.points.toLocaleString()} points | total ${account.points.toLocaleString()} points)`
-        );
+        const againButton = new ButtonBuilder()
+            .setCustomId("again")
+            .setLabel("Fish again")
+            .setEmoji("\u{1F501}")
+            .setStyle(ButtonStyle.Success);
+
+        const row = new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(againButton);
+
+        const reply = await interaction.editReply({
+            content: `Caught ${fish.prefix} ${fish.rarity} fish ${fish.emoji}! ` +
+            `(+${fish.points.toLocaleString()} points | total ${account.points.toLocaleString()} points)`,
+            components: [row]
+        });
+
+        const buttonCollector = reply.createMessageComponentCollector({ componentType: ComponentType.Button, time: 30000 });
+
+        buttonCollector.on("collect", async (collected) => {
+            if (!fishedAgain) {
+                fishedAgain = true;
+            
+                buttonCollector.stop();
+
+                await interaction.editReply({ components: [] });
+
+                this.fish(collected);
+
+                return;
+            }
+        });
     }
 
     private getRandomFish() {
