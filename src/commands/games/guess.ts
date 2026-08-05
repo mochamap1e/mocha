@@ -253,11 +253,7 @@ export class Guess extends Command {
                 }
             });
 
-            setTimeout(() => {
-                if (!playedAgain) {
-                    interaction.editReply({ components: [] });
-                }
-            }, time);
+            setTimeout(() => { if (!playedAgain) { interaction.editReply({ components: [] }) } }, time);
         }
 
         // BUTTON HANDLER

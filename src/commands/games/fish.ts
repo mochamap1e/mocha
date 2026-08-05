@@ -7,26 +7,37 @@ interface Fishy {
     prefix: string,
     rarity: string,
     chance: number,
+    operator: string,
     points: number,
     emoji: string
 }
 
+const Operator = {
+    Add: "+",
+    Subtract: "-",
+    Multiply: "*",
+    Divide: "/"
+}
+
 const fishies: Fishy[] = [
-    { prefix: "a", rarity: "chopped", chance: 50, points: 1, emoji: "<:duuuughghhhhh:1533697799328235632>" },
-    { prefix: "an", rarity: "unrated", chance: 40, points: 5, emoji: "<:unrated:1533700573415739462>" },
-    { prefix: "an", rarity: "auto", chance: 30, points: 10, emoji: "<:auto:1533700565354152068>" },
-    { prefix: "an", rarity: "easy", chance: 20, points: 25, emoji: "<:easy:1533700567057043536>" },
-    { prefix: "a",  rarity: "normal", chance: 15, points: 50, emoji: "<:normal:1533700570962071732>" },
-    { prefix: "a", rarity: "hard", chance: 10, points: 75, emoji: "<:hard:1533700567824597123>" },
-    { prefix: "a", rarity: "harder", chance: 8, points: 100, emoji: "<:harder:1533700568755732500>" },
-    { prefix: "an", rarity: "insane", chance: 6, points: 150, emoji: "<:insane:1533700569875878028>" },
-    { prefix: "an", rarity: "easy demon", chance: 4, points: 250, emoji: "<:EasyDemon:1533570525903716362>" },
-    { prefix: "a", rarity: "medium demon", chance: 3, points: 500, emoji: "<:MediumDemon:1533570531276755025>" },
-    { prefix: "a", rarity: "hard demon", chance: 2, points: 750, emoji: "<:HardDemon:1533570528424755400>" },
-    { prefix: "an", rarity: "insane demon", chance: 1, points: 1000, emoji: "<:InsaneDemon:1533570530182168788>" },
-    { prefix: "an", rarity: "extreme demon", chance: 0.5, points: 2000, emoji: "<:ExtremeDemon:1533570526797234277>" },
-    { prefix: "an", rarity: "INFINITE DEMON", chance: 0.01, points: 50000, emoji: "<:infinitedemon:1533697800095924244>" },
+    { prefix: "a", rarity: "chopped", chance: 10, operator: Operator.Subtract, points: 25, emoji: "<:duuuughghhhhh:1533697799328235632>" },
+
+    { prefix: "an", rarity: "unrated", chance: 40, operator: Operator.Add, points: 5, emoji: "<:unrated:1533700573415739462>" },
+    { prefix: "an", rarity: "auto", chance: 30, operator: Operator.Add, points: 10, emoji: "<:auto:1533700565354152068>" },
+    { prefix: "an", rarity: "easy", chance: 20, operator: Operator.Add, points: 25, emoji: "<:easy:1533700567057043536>" },
+    { prefix: "a",  rarity: "normal", chance: 15, operator: Operator.Add, points: 50, emoji: "<:normal:1533700570962071732>" },
+    { prefix: "a", rarity: "hard", chance: 10, operator: Operator.Add, points: 75, emoji: "<:hard:1533700567824597123>" },
+    { prefix: "a", rarity: "harder", chance: 8, operator: Operator.Add, points: 100, emoji: "<:harder:1533700568755732500>" },
+    { prefix: "an", rarity: "insane", chance: 6, operator: Operator.Add, points: 150, emoji: "<:insane:1533700569875878028>" },
+    { prefix: "an", rarity: "easy demon", chance: 4, operator: Operator.Add, points: 250, emoji: "<:EasyDemon:1533570525903716362>" },
+    { prefix: "a", rarity: "medium demon", chance: 3, operator: Operator.Add, points: 500, emoji: "<:MediumDemon:1533570531276755025>" },
+    { prefix: "a", rarity: "hard demon", chance: 2, operator: Operator.Add, points: 750, emoji: "<:HardDemon:1533570528424755400>" },
+    { prefix: "an", rarity: "insane demon", chance: 1, operator: Operator.Add, points: 1000, emoji: "<:InsaneDemon:1533570530182168788>" },
+    { prefix: "an", rarity: "extreme demon", chance: 0.5, operator: Operator.Add, points: 2000, emoji: "<:ExtremeDemon:1533570526797234277>" },
+    { prefix: "an", rarity: "INFINITE DEMON", chance: 0.01, operator: Operator.Add, points: 50000, emoji: "<:infinitedemon:1533697800095924244>" },
 ];
+
+const time = 30000;
 
 export class Fish extends Command {
     public constructor(context: Command.LoaderContext, options: Command.Options) {
@@ -59,7 +70,7 @@ export class Fish extends Command {
 
         const fish = this.getRandomFish();
 
-        const account = await modifyPoints(interaction.user, "+", fish.points);
+        const account = await modifyPoints(interaction.user, fish.operator, fish.points);
 
         const againButton = new ButtonBuilder()
             .setCustomId("again")
@@ -72,11 +83,11 @@ export class Fish extends Command {
 
         const reply = await interaction.editReply({
             content: `Caught ${fish.prefix} ${fish.rarity} fish ${fish.emoji}! ` +
-            `(+${fish.points.toLocaleString()} points | total ${account.points.toLocaleString()} points)`,
+            `(${fish.operator}${fish.points.toLocaleString()} points | total ${account.points.toLocaleString()} points)`,
             components: [row]
         });
 
-        const buttonCollector = reply.createMessageComponentCollector({ componentType: ComponentType.Button, time: 30000 });
+        const buttonCollector = reply.createMessageComponentCollector({ componentType: ComponentType.Button, time });
 
         buttonCollector.on("collect", async (collected) => {
             if (!fishedAgain) {
@@ -91,6 +102,8 @@ export class Fish extends Command {
                 return;
             }
         });
+
+        setTimeout(() => { if (!fishedAgain) interaction.editReply({ components: [] }) }, time);
     }
 
     private getRandomFish() {
