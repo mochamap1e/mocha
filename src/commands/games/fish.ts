@@ -14,9 +14,7 @@ interface Fishy {
 
 const Operator = {
     Add: "+",
-    Subtract: "-",
-    Multiply: "*",
-    Divide: "/"
+    Subtract: "-"
 }
 
 const fishies: Fishy[] = [
