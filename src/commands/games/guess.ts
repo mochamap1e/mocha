@@ -38,7 +38,8 @@ const reveal2Pixelation = 10;
 const maxTypos = 2;
 const maxStreak = 10;
 
-let runningGames: string[] = [];
+let currentlyPlaying: string[] = [];
+let channelsCurrentlyPlaying: string[] = [];
 
 enum GameEndReason {
     CorrectAnswer,
@@ -84,8 +85,6 @@ export class Guess extends Command {
     }
 
     public override async chatInputRun(interaction: Command.ChatInputCommandInteraction) {
-        if (runningGames.includes(interaction.user.id))
-            return interaction.reply({ content: "You are already playing this game!", flags: MessageFlags.Ephemeral });
 
         const listInput = interaction.options.getInteger("list", false);
         const limitInput = interaction.options.getInteger("limit", false);
@@ -100,11 +99,18 @@ export class Guess extends Command {
     }
 
     private async game(interaction: Command.ChatInputCommandInteraction | ButtonInteraction, list: ListIntegration, listName: string, limit?: number) {
-        await interaction.deferReply();
-
-        runningGames.push(interaction.user.id);
-
         const channel = interaction.channel as TextChannel;
+
+        if (currentlyPlaying.includes(interaction.user.id))
+            return interaction.reply({ content: "You are already playing this game!", flags: MessageFlags.Ephemeral });
+
+        if (channelsCurrentlyPlaying.includes(channel.id))
+            return interaction.reply({ content: "There is already a game in this channel!", flags: MessageFlags.Ephemeral });
+
+        currentlyPlaying.push(interaction.user.id);
+        channelsCurrentlyPlaying.push(channel.id);
+
+        await interaction.deferReply();
 
         const game = this;
         const level = await list.getRandomLevel(limit);
@@ -216,8 +222,11 @@ export class Guess extends Command {
                     break;
             }
 
-            const idInRunningGames = runningGames.indexOf(interaction.user.id);
-            if (idInRunningGames !== -1) runningGames.splice(idInRunningGames, 1);
+            const idInCurrentlyPlaying = currentlyPlaying.indexOf(interaction.user.id);
+            if (idInCurrentlyPlaying !== -1) currentlyPlaying.splice(idInCurrentlyPlaying, 1);
+
+            const idInChannelsCurrentlyPlaying = channelsCurrentlyPlaying.indexOf(channel.id);
+            if (idInChannelsCurrentlyPlaying !== -1) channelsCurrentlyPlaying.splice(idInChannelsCurrentlyPlaying, 1);
 
             const playAgainButton = new ButtonBuilder()
                 .setCustomId("again")

@@ -5,8 +5,6 @@ import "@/utils/lists";
 
 export const token = process.env.TOKEN; if (!token) throw new Error("TOKEN must be provided in .env!");
 
-const wipeCommands = false;
-
 const client = new SapphireClient({
     intents: [
         GatewayIntentBits.Guilds,
@@ -15,13 +13,6 @@ const client = new SapphireClient({
         GatewayIntentBits.MessageContent
     ]
 });
-
-if (wipeCommands) {
-    client.once(Events.ClientReady, async () => {
-        await client.application?.commands.set([]);
-        console.log("Wiped all commands.");
-    });
-}
 
 await client.login(token);
 

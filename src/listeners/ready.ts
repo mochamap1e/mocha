@@ -2,6 +2,8 @@ import { Listener, Events } from "@sapphire/framework";
 
 import { whitelist } from "@/utils/whitelist";
 
+const wipeCommands = false;
+
 export class PingListener extends Listener {
     public constructor(context: Listener.LoaderContext, options: Listener.Options) {
         super(context, {
@@ -12,6 +14,11 @@ export class PingListener extends Listener {
     }
 
     public async run() {
+        if (wipeCommands) {
+            await this.container.client.application.commands.set([]);
+            console.log("Wiped all commands.");
+        }
+
         await this.container.client.guilds.fetch();
 
         this.container.client.guilds.cache.forEach(async (server) => {
