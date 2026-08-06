@@ -11,7 +11,9 @@ const client = new SapphireClient({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.MessageContent
-    ]
+    ],
+    loadMessageCommandListeners: true,
+    defaultPrefix: "$"
 });
 
 await client.login(token);

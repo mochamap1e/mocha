@@ -1,5 +1,5 @@
 import { Command } from "@sapphire/framework";
-import { User, EmbedBuilder } from "discord.js";
+import { EmbedBuilder } from "discord.js";
 
 import { getAccount } from "@/utils/account";
 

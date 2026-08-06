@@ -22,8 +22,6 @@ export class PingListener extends Listener {
         await this.container.client.guilds.fetch();
 
         this.container.client.guilds.cache.forEach(async (server) => {
-            console.log(`[SERVER]: ${server.name} | ${server.id}`);
-
             if (!whitelist.includes(server.id)) {
                 await server.leave();
                 console.log(`Left unwhitelisted server ${server.name}`);
