@@ -86,7 +86,7 @@ export class Fish extends Command {
             .addComponents(againButton);
 
         const reply = await interaction.editReply({
-            content: `Caught ${fish.prefix} ${fish.rarity} fish ${fish.emoji}! ` +
+            content: `Caught ${fish.prefix} **${fish.rarity}** fish ${fish.emoji}! ` +
             `(${fish.operator}${fish.points.toLocaleString()} points | total ${account.points.toLocaleString()} points)`,
             components: [row]
         });

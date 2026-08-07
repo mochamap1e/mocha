@@ -307,7 +307,7 @@ export class Guess extends Command {
                 if (reveals === 2) {
                     pixelation = reveal2Pixelation;
 
-                    if (hints < 3) {
+                    if (hints < 2) {
                         row.setComponents(hintButton, giveUpButton);
                     } else {
                         row.setComponents(giveUpButton);
