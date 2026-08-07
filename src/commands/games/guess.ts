@@ -347,8 +347,8 @@ export class Guess extends Command {
 
         messageCollector.on("collect", async (collected) => {
             if (!collected.author.bot) {
-                const input = collected.content.toLowerCase().replace(/\s+/g, " ");
-                const levelName = level.name.toLowerCase();
+                const input = collected.content.replace(/\s+/g, " ").toLowerCase().trim();
+                const levelName = level.name.replace(/\s*\([^()]*\)/g, "").toLowerCase().trim();
 
                 if (distance(input, levelName) <= maxTypos) {
                     collected.react("\u{2705}");
