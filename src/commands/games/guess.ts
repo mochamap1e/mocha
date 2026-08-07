@@ -29,9 +29,9 @@ const imageUrl = "attachment://" + imageName;
 const time = 30000;
 
 const startPoints = 100;
-const pointLoss = 18;
+const pointLoss = 16;
 
-const startPixelation = 25;
+const startPixelation = 20;
 const reveal1Pixelation = 15;
 const reveal2Pixelation = 10;
 
