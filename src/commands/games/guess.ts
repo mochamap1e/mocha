@@ -180,7 +180,7 @@ export class Guess extends Command {
             buttonCollector.stop();
             messageCollector.stop();
 
-            const answerString = `The level was ${level.name} (#${level.position})`;
+            const answerString = `The level was **${level.name}** (#${level.position})`;
 
             embed.setTitle("Game over!");
 
@@ -277,9 +277,9 @@ export class Guess extends Command {
 
                 points -= pointLoss;
 
-                if (hints === 1) hint = `This level was published by ${level.publisher}.`;
+                if (hints === 1) hint = `This level was published by **${level.publisher}**.`;
                 if (hints === 2) {
-                    hint = `This level was verified by ${level.verifier}.`;
+                    hint = `This level was verified by **${level.verifier}**.`;
 
                     if (reveals < 2) {
                         row.setComponents(revealMoreButton, giveUpButton)
